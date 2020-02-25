@@ -34,7 +34,8 @@ CREATE TABLE "order" (
     obs varchar(255) NOT NULL,
     total double NOT NULL,
     date varchar(11) NOT NULL,
-    item_id integer NOT NULL,
+    item_id integer,
+    finalizado boolean DEFAULT true,
     CONSTRAINT order_item FOREIGN KEY (item_id)
     REFERENCES item (id)
 );''')
@@ -59,3 +60,5 @@ CREATE TABLE stock (
 conn.commit()
 
 conn.close
+
+print("DB criado com sucesso!")

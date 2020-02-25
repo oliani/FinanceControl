@@ -1,14 +1,34 @@
 import sqlite3
-
 import os
 conn = sqlite3.connect('maindb.db')
 
+UNDERLUNE = '\033[4m'
+NEGATIVE = '\033[07m'
+DEFAULT = '\033[0m'
+F_RED = '\033[31m'
+F_GREEN = '\033[32m'
+F_YELLOW = '\033[33m'
+F_BLUE ='\033[34m'
+F_MAGENTA ='\033[35m'
+F_CYAN ='\033[36m'
+F_WHITE ='\033[37m'
+F_EXTENDED ='\033[38m'
+F_DEFAULT ='\033[39m'
+
+
+
+
+
+
 
 def totais():
+    os.system("cls")
+    print("Menu > Totais - Alerta: nada implementado nessa sessão!")
     print ("1 - Ver tudo")
     print ("2 - Ver resumo baseado em tempo")
     print ("3 - Ver registros")
     print ("0 - voltar")
+    print("> ", end="")
     option = input()
 
 #end of totais
@@ -25,6 +45,7 @@ def produtos():
         print ("3 - Excluir produto")
         print ("4 - Relartório")
         print ("0 - voltar")
+        print("> ", end="")
         option = input()
 
         try:
@@ -35,13 +56,17 @@ def produtos():
         if option == 1:
             os.system('cls')
             print("Menu > Produtos > Novo produto")
-            print("Digite o CÓDIGO do produto: ", end=""))
+            print("Digite o CÓDIGO do produto: ")
+            print("> ", end="")
             prodID = input()
-            print("Digite o NOME do produto: ", end="")
+            print("Digite o NOME do produto: ")
+            print("> ", end="")
             prodNome = input()
-            print("Digite o CUSTO do produto: ", end=""))
+            print("Digite o CUSTO do produto: ")
+            print("> ", end="")
             prodPrice = input()
-            print("Observação para estoque: ", end=""))
+            print("Observação para estoque: ")
+            print("> ", end="")
             obs = input()
             c.execute("INSERT INTO product VALUES (:ID,:nome,:custo)" , {"ID": prodID, "nome": prodNome, "custo":prodPrice})
             c.execute("INSERT INTO stock (obs, quant, product_id) VALUES (:obs, :quant, :product_id)", {"obs":obs, "quant":0, "product_id": prodID})
@@ -66,16 +91,25 @@ def produtos():
                 print("Digite a nova OBSERVAÇÃO DE ESTOQUE do produto " + value + ": ", end="")
                 obs = input()
                 c.execute("UPDATE product SET name = :new_name, cost = :new_cost WHERE id = :id", {"new_name": nome, "new_cost": price, "id": value})
-                c.execute("UPDATE stock SET obs WHERE producto_id = :id", {"id": value})
+                if len(obs) > 1:
+                    c.execute("UPDATE stock SET obs = :obs WHERE product_id = :id", {"obs": obs,"id": value})
                 conn.commit()
 
         elif option == 3:
-            print("Opção desabilitada!")
+            print("Menu > Produtos > Exluir item \n -> Opção desabilitada! <-")
             os.system("pause")
         elif option == 4:
             os.system('cls')
             c.execute("SELECT * FROM product")
-            print(c.fetchone())
+            obj = c.fetchall()
+            row_count = len(obj)
+            i = 0
+            print("COD  +      DESCRIÇÃO      +   CUSTO")
+            print("-----------------------------------------")
+            while i < row_count:
+                print (obj[i][0], ' | ', obj[i][1], " |  R$", obj[i][2])
+                i = i+ 1
+
             os.system("pause")
         elif option == 0:
             sair = 1
@@ -92,6 +126,7 @@ def caixa():
 #end of caixa
 
 def estoque():
+    os.system('cls')
     voltar = 0
     while voltar == 0:
         c = conn.cursor()
@@ -100,6 +135,7 @@ def estoque():
         print ("1 - Alterar estoque")
         print ("2 - Relatório")
         print ("0 - voltar")
+        print("> ", end="")
         option = input()
 
         try:
@@ -113,8 +149,10 @@ def estoque():
             c.execute("Select * FROM product")
             c.fetchall()
             print("Digite o CÓDIGO do produto a ser adicionado em estoque: ")
+            print("> ", end="")
             cod = input()
             print("Digite a quantidade a ser incrementada em estoque no produto " + cod + ": ")
+            print("> ", end="")
             quantidade = input()
             c.execute("SELECT quant FROM stock WHERE product_id = :cod", {"cod": cod})
             value = c.fetchone()
@@ -139,21 +177,37 @@ def estoque():
 
 def registros():
     print ("TODO")
+    option = input()
 
 #end of registros
+
+def pedidos():
+    c = conn.cursor()
+    sair = 0
+    os.system('cls')
+
+    print("Menu > Pedidos")
+    print("1 - Cadastrar novo pedido")
+    print("2 - Pedidos em aberto")
+    print("3 - Pedidos finalizados")
+    print("4 - Pedido por período")
+    print("0 - Voltar")
+
 
 c = conn.cursor()
 
 sair = 0
 while sair == 0:
     os.system('cls')
-    print ("Selecione a opção desejada: ")
-    print ("1 - Ver dados totais")
+    print (F_RED + "Menu")
+    print (F_CYAN + "1 - Ver dados totais")
     print ("2 - Gerenciar Produtos")
     print ("3 - Caixa")
     print ("4 - Estoque")
-    print ("5 - Registros")
+    print ("5 - Pedidos")
+    print ("6 - Registros")
     print ("0 - Sair")
+    print (F_GREEN + "> ", end="")
 
     option = input()
   
@@ -161,7 +215,6 @@ while sair == 0:
         option = int (option)
     except:
         option = 99
-
     if option == 1:
         totais()
     elif option == 2:
@@ -171,6 +224,8 @@ while sair == 0:
     elif option == 4:
         estoque()
     elif option == 5:
+        pedidos()
+    elif option == 6:
         registros()
     elif option == 0:
         sair = 1
