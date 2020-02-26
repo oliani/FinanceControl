@@ -2,25 +2,6 @@ import sqlite3
 import os
 conn = sqlite3.connect('maindb.db')
 
-UNDERLUNE = '\033[4m'
-NEGATIVE = '\033[07m'
-DEFAULT = '\033[0m'
-F_RED = '\033[31m'
-F_GREEN = '\033[32m'
-F_YELLOW = '\033[33m'
-F_BLUE ='\033[34m'
-F_MAGENTA ='\033[35m'
-F_CYAN ='\033[36m'
-F_WHITE ='\033[37m'
-F_EXTENDED ='\033[38m'
-F_DEFAULT ='\033[39m'
-
-
-
-
-
-
-
 def totais():
     os.system("cls")
     print("Menu > Totais - Alerta: nada implementado nessa sessão!")
@@ -107,7 +88,10 @@ def produtos():
             print("COD  +      DESCRIÇÃO      +   CUSTO")
             print("-----------------------------------------")
             while i < row_count:
-                print (obj[i][0], ' | ', obj[i][1], " |  R$", obj[i][2])
+                if i%2 == 1:
+                    print (obj[i][0], ' | ', obj[i][1], " |  R$", obj[i][2])
+                else:
+                    print (obj[i][0], ' | ', obj[i][1], " |  R$", obj[i][2])
                 i = i+ 1
 
             os.system("pause")
@@ -184,30 +168,178 @@ def registros():
 def pedidos():
     c = conn.cursor()
     sair = 0
-    os.system('cls')
+    while sair == 0:
+        os.system('cls')
+        print ("Menu > Pedidos")
+        print("1 - Cadastrar novo pedido")
+        print("2 - Pedidos em aberto")
+        print("3 - Pedidos finalizados")
+        print("4 - Pedido por período")
+        print("5 - Todos os pedidos")
+        print("6 - Excluir pedido")
+        print("0 - Voltar")
+        print ("> ", end="")
+        option = input()
+  
+        try:
+            option = int (option)
+        except:
+            option = 99
 
-    print("Menu > Pedidos")
-    print("1 - Cadastrar novo pedido")
-    print("2 - Pedidos em aberto")
-    print("3 - Pedidos finalizados")
-    print("4 - Pedido por período")
-    print("0 - Voltar")
+        if option == 1:
+            os.system('cls')
+            print ("Menu > Pedidos > Cadastrar novo pedido")
+            c.execute("INSERT INTO oc (obs, total, date, finalizado) VALUES (' ', 0, '25/02/2020', true)")
+            conn.commit()
+            pedID = c.lastrowid
+            print(pedID)
+            print("Pedido ", pedID, " gerado com sucesso!")
+            os.system("pause")
+            fechar = 0
+            while fechar == 0:
+                os.system("cls")
+                print ("Menu > Pedidos > Pedido ", pedID)
+                c.execute("SELECT * FROM item WHERE oc_id = :ped", {"ped": pedID})
+                items = c.fetchall()
+                i = 0
+                while i < len(items):
+                    print(items[i])
+                    i = i + 1
 
+                c.execute("SELECT total FROM oc WHERE id = :pedID", {"pedID": pedID})
+                total = c.fetchone()
+                total = total[0]
+                print("Total: R$ ", total)
+                
+                print("\n1 - Adicionar Item")
+                print("2 - Remover Item")
+                print("3 - Concluir este pedido")
+                print("4 - Cancelar este pedido")
+                print ("> ", end="")
+                option = input()
+  
+                try:
+                    option = int (option)
+                except:
+                    option = 99
+                
+                if option == 1:
+                    os.system("cls")
+                    print ("Menu > Pedidos > Pedido ", pedID, "> Inserir")
+                    c.execute("SELECT * FROM product")
+                    ret = c.fetchall()
+                    i = 0
+
+                    print("Digite o CÓDIGO do produto")
+                    print ("> ", end="")
+                    prodID= input()
+                    c.execute("SELECT id FROM product WHERE id = :input", {"input": prodID})
+                    if c.fetchone():
+                        c.execute("SELECT quant FROM stock WHERE product_id = :prodID", {"prodID": prodID})
+                        estoque = c.fetchone()
+                        estoque = estoque[0]
+                        if estoque > 0:
+                            print("Insira o preço de venda do do produto ", prodID, ": \n", ">", end="")
+                            valor = input()
+                            c.execute("INSERT INTO item (price, product_id, oc_id) VALUES (:valor, :option, :pedID)", {"valor": valor, "option": option, "pedID": pedID})
+                            conn.commit()
+                            c.execute("SELECT total FROM oc WHERE id = :pedID", {"pedID": pedID})
+                            total = c.fetchone()
+                            total = total[0] + float(valor)
+                            c.execute("UPDATE oc SET total = :total WHERE id = :pedID", {"total": total, "pedID": pedID})
+                            c.execute("UPDATE stock SET quant = :estoque WHERE product_id = :prodID", {"estoque": estoque - 1, "prodID": prodID})
+                            conn.commit()
+                            print("Produto ", prodID, " inserido no pedido ", pedID, " com sucesso!")
+                            os.system("pause")
+                        else:
+                            print("Estoque do produto ", prodID, " está zerado! Produto não adicionado ao pedido.")
+                            os.system("pause")
+                    else:
+                        print("Produto não existe!")
+                if option == 2:
+                    os.system('cls')
+                    print ("Menu > Pedidos > Pedido ", pedID, "> Remover")
+                    print("Pedido atual:")
+                    c.execute("SELECT * FROM item WHERE oc_id = :ped", {"ped": pedID})
+                    items = c.fetchall()
+                    i = 0
+                    while i < len(items):
+                        print(items[i])
+                        i = i + 1
+                    print("Digite o código do produto a ser removido:\n", ">", end="")
+                    r_cod = input()
+                    c.execute("SELECT id FROM item WHERE oc_id = :ped AND product_id = :r_cod", {"ped": pedID, "r_cod": r_cod})
+                    print(pedID, "+ " , r_cod)
+                    record = c.fetchone()
+                    print("record", record)
+                    if n > 0:
+                        print("remove")
+                    else:
+                        print('not remove')
+                    os.system('pause')
+
+                if option == 3:
+                    os.system('cls')
+                    print ("Menu > Pedidos > Pedido ", pedID, " > Concluir")
+                    print("Pedido ", pedID, " salvo com sucesso!")
+                    conn.commit()
+                    os.system("pause")
+                    fechar = 1
+                if option == 4:
+                    os.system('cls')
+                    print ("Menu > Pedidos > Pedido ", pedID, " > Cancelar")
+                    print("Limpando itens do pedido ", prodID, "...")
+                    c.execute("DELETE FROM item WHERE oc_id = :prodID", {"prodID": prodID})
+                    print("Pedido ", pedID, " foi cancelado")
+                    os.system("cls")
+                    fechar = 1
+        if option == 5:
+            c.execute("SELECT id, total FROM oc")
+            obj = c.fetchall()
+            row_count = len(obj)
+            i = 0
+            print("COD   +   TOTAL      ")
+            print("---------------------")
+            while i < row_count:
+                print (obj[i][0],  " |  R$", obj[i][1])
+                i = i + 1           
+            os.system('pause')
+                    
+        if option == 3:
+            os.system('cls')
+            c.execute("SELECT * FROM oc WHERE finalizado = true")
+            obj = c.fetchall()
+            i = 0
+            while i < len(obj):
+                print(obj[i])
+                i = i + 1
+            os.system("pause")
+        if option == 4:
+            os.system('cls')
+            c.execute("SELECT * FROM oc")
+            obj = c.fetchall()
+            i = 0
+            while i < len(obj):
+                print(obj[i])
+                i = i + 1
+            os.system("pause")
+        if option == 0:
+            sair = 1
 
 c = conn.cursor()
 
 sair = 0
 while sair == 0:
     os.system('cls')
-    print (F_RED + "Menu")
-    print (F_CYAN + "1 - Ver dados totais")
+    print ("Menu")
+    print ("1 - Ver dados totais")
     print ("2 - Gerenciar Produtos")
     print ("3 - Caixa")
     print ("4 - Estoque")
     print ("5 - Pedidos")
     print ("6 - Registros")
     print ("0 - Sair")
-    print (F_GREEN + "> ", end="")
+    print ("> ", end="")
 
     option = input()
   

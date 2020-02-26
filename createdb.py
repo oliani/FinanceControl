@@ -14,8 +14,11 @@ CREATE TABLE item (
     id integer NOT NULL CONSTRAINT item_pk PRIMARY KEY AUTOINCREMENT,
     price double NOT NULL,
     product_id varchar(20) NOT NULL,
+    oc_id int NOT NULL,
     CONSTRAINT item_product FOREIGN KEY (product_id)
-    REFERENCES product (id)
+    REFERENCES product (id),
+    CONSTRAINT item_order FOREIGN KEY (oc_id)
+    REFERENCES "oc" (id)
 );''')
 
 c.execute('''
@@ -29,15 +32,12 @@ CREATE TABLE operation (
 );''')
 
 c.execute('''
-CREATE TABLE "order" (
-    id int NOT NULL CONSTRAINT order_pk PRIMARY KEY,
-    obs varchar(255) NOT NULL,
-    total double NOT NULL,
-    date varchar(11) NOT NULL,
-    item_id integer,
-    finalizado boolean DEFAULT true,
-    CONSTRAINT order_item FOREIGN KEY (item_id)
-    REFERENCES item (id)
+CREATE TABLE oc (
+    id integer NOT NULL CONSTRAINT order_pk PRIMARY KEY AUTOINCREMENT,
+    obs varchar(255),
+    total double,
+    date varchar(11),
+    finalizado boolean
 );''')
 
 c.execute('''
