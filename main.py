@@ -101,11 +101,72 @@ def produtos():
 #end of produtos
 
 def caixa():
-    print ("1 - Histórico")
-    print ("2 - Tezouraria")
-    print ("3 - Ralatório")
-    print ("0 - voltar")
-    option = input()
+    sair = 0
+    while sair == 0:
+        os.system('cls')
+        print("Menu > Caixa")
+        print ("1 - Histórico")
+        print ("2 - Tezouraria")
+        print ("3 - Ralatório")
+        print ("0 - voltar")
+        option = input()
+
+        try:
+            option = int (option)
+        except:
+            option = 99
+        if option == 1:
+            os.system('cls')
+            print("Menu > Caixa")
+            c.execute("SELECT id, value, obs FROM operation")
+            vetor = c.fetchall()
+            leng = len(vetor)
+            i = 0
+            print("-----------------------------------------------------------------------")
+            print(" ID | OPERAÇÃO  |    VALOR    |      OBS ")
+            print("-----------------------------------------------------------------------")
+            while i < leng:
+                if vetor[i][2][0] == 'P' and vetor[i][2][1] == 'E' and vetor[i][2][2] == 'D' and vetor[i][2][3] == 'I':
+                    print('\033[33m', vetor[i][0], " |  PEDIDO   |   R$ ", vetor[i][1], " | ", vetor[i][2], '\033[39m')
+                elif vetor[i][2][0] == 'P' and vetor[i][2][1] == 'E' and vetor[i][2][2] == 'D':
+                    print('\033[34m', vetor[i][0], " |  PEDIDO   |   R$ ", vetor[i][1], " | ", vetor[i][2], '\033[39m')
+                elif vetor[i][1] < 0:
+                    print('\033[31m', vetor[i][0], " |  SANGRIA  |   R$ ", vetor[i][1], " | ", vetor[i][2], '\033[39m')
+                else:
+                    print('\033[32m', vetor[i][0], " |  ADIÇÃO   |   R$ ", vetor[i][1], " | ", vetor[i][2], '\033[39m')
+                i = i + 1
+            os.system('pause')
+
+        if option == 2:
+            os.system('cls')
+            print("Menu > Caixa > Tesouraria")
+            print("Digite o valor a inserir no caixa ou digite o valor com - na fente para remover do caixa:\n", end=">")
+            valor = input()
+            print("Digite a observação dessa operação: ")
+            obs = input()
+            if float(valor) > 0: 
+                os.system('cls')
+                c.execute("INSERT INTO operation (value, obs, cashier_id) VALUEs (:valor, :obs, 1)",{ "valor": valor, "obs": obs})
+                print("INJEÇÃO de R$ ", valor, " realizada com sucesso!")
+            elif valor < 0:
+                c.execute("INSERT INTO operation (value, obs, cashier_id) VALUEs (:valor, :obs, 1)",{ "valor": valor, "obs": obs})
+                print("SANGRIA de R$ ", valor, " realizada com sucesso!")
+            else:
+                print("Operação impossível de ser realizada! Valor ZERADO!")
+            c.execute("SELECT total FROM cashier WHERE id = 1")
+            value = c.fetchone()
+            actual= float(value[0])
+            c.execute("UPDATE cashier SET total = :value WHERE id = 1", {"value": actual + float(valor)})
+            conn.commit()
+            os.system('pause')
+        if option == 3:
+            os.system('cls')
+            c.execute("Select * FROM cashier")
+            print(c.fetchall())
+            os.system('pause')
+        if option == 0:
+            sair = 1
+    
 
 #end of caixa
 
@@ -234,28 +295,44 @@ def pedidos():
                     print ("> ", end="")
                     prodID= input()
                     c.execute("SELECT id FROM product WHERE id = :input", {"input": prodID})
-                    if c.fetchone():
-                        c.execute("SELECT quant FROM stock WHERE product_id = :prodID", {"prodID": prodID})
-                        estoque = c.fetchone()
-                        estoque = estoque[0]
-                        if estoque > 0:
-                            print("Insira o preço de venda do do produto ", prodID, ": \n", ">", end="")
-                            valor = input()
-                            c.execute("INSERT INTO item (price, product_id, oc_id) VALUES (:valor, :option, :pedID)", {"valor": valor, "option": option, "pedID": pedID})
-                            conn.commit()
-                            c.execute("SELECT total FROM oc WHERE id = :pedID", {"pedID": pedID})
-                            total = c.fetchone()
-                            total = total[0] + float(valor)
-                            c.execute("UPDATE oc SET total = :total WHERE id = :pedID", {"total": total, "pedID": pedID})
-                            c.execute("UPDATE stock SET quant = :estoque WHERE product_id = :prodID", {"estoque": estoque - 1, "prodID": prodID})
-                            conn.commit()
-                            print("Produto ", prodID, " inserido no pedido ", pedID, " com sucesso!")
-                            os.system("pause")
-                        else:
-                            print("Estoque do produto ", prodID, " está zerado! Produto não adicionado ao pedido.")
-                            os.system("pause")
-                    else:
-                        print("Produto não existe!")
+                    product = c.fetchone()
+                    try:
+                        if product[0] == prodID:
+                            c.execute("SELECT quant FROM stock WHERE product_id = :prodID", {"prodID": prodID})
+                            estoque = c.fetchone()
+                            estoque = estoque[0]
+                            if estoque > 0:
+                                print("Insira o preço de venda do do produto ", prodID, ": \n", ">", end="")
+                                valor = input()
+                                if valor:    
+                                    try:
+                                        c.execute("INSERT INTO item (price, product_id, oc_id) VALUES (:valor, :option, :pedID)", {"valor": valor, "option": option, "pedID": pedID})
+                                        conn.commit()
+                                        c.execute("SELECT total FROM oc WHERE id = :pedID", {"pedID": pedID})
+                                        total = c.fetchone()
+                                        total = total[0] + float(valor)
+                                        c.execute("SELECT total FROM cashier where ID = 1")
+                                        valor_atual = c.fetchone()
+                                        v = float(valor_atual[0])
+                                        ss = "PEDIDO " + str(pedID) 
+                                        c.execute("UPDATE cashier SET total = :valor WHERE id =1", {"valor": float(valor) + v})
+                                        c.execute("INSERT INTO operation (value, obs, cashier_id, oc_id) VALUEs (:valor, :obs, 1, :id)",{ "valor": float(valor), "obs":ss, "id": pedID})
+                                        c.execute("UPDATE oc SET total = :total WHERE id = :pedID", {"total": total, "pedID": pedID})
+                                        c.execute("UPDATE stock SET quant = :estoque WHERE product_id = :prodID", {"estoque": estoque - 1, "prodID": prodID})
+                                        conn.commit()
+                                        print("Produto ", prodID, " inserido no pedido ", pedID, " com sucesso!")
+                                        os.system("pause")
+                                    except:
+                                        print("O produto deve possuir um valor de venda válido! Item cancelado...")
+                                else:
+                                    print("O produto deve possuir um valor de venda válido! Item cancelado...")
+                                    os.system("pause")
+                            else:
+                                print("Estoque do produto ", prodID, " está zerado! Produto não adicionado ao pedido.")
+                                os.system("pause")
+                    except:
+                        print("Produto inexistente!")
+                        os.system('pause')  
                 if option == 2:
                     os.system('cls')
                     print ("Menu > Pedidos > Pedido ", pedID, "> Remover")
@@ -268,12 +345,14 @@ def pedidos():
                         i = i + 1
                     print("Digite o código do produto a ser removido:\n", ">", end="")
                     r_cod = input()
-                    c.execute("SELECT id FROM item WHERE oc_id = :ped AND product_id = :r_cod", {"ped": pedID, "r_cod": r_cod})
+                    c.execute("SELECT id, product_id FROM item WHERE oc_id = :ped AND product_id = :r_cod", {"ped": pedID, "r_cod": r_cod})
                     print(pedID, "+ " , r_cod)
-                    record = c.fetchone()
-                    print("record", record)
-                    if n > 0:
+                    
+                    total = c.fetchall()
+                    print(total)
+                    if total[0] == r_cod:
                         print("remove")
+                        os.system('pause')
                     else:
                         print('not remove')
                     os.system('pause')
@@ -288,11 +367,12 @@ def pedidos():
                 if option == 4:
                     os.system('cls')
                     print ("Menu > Pedidos > Pedido ", pedID, " > Cancelar")
-                    print("Limpando itens do pedido ", prodID, "...")
-                    c.execute("DELETE FROM item WHERE oc_id = :prodID", {"prodID": prodID})
+                    print("Limpando itens do pedido ", pedID, "...")
+                    c.execute("DELETE FROM item WHERE oc_id = :prodID", {"prodID": pedID})
                     print("Pedido ", pedID, " foi cancelado")
-                    os.system("cls")
+                    os.system("pause")
                     fechar = 1
+                    option = 99
         if option == 5:
             c.execute("SELECT id, total FROM oc")
             obj = c.fetchall()
@@ -323,8 +403,29 @@ def pedidos():
                 print(obj[i])
                 i = i + 1
             os.system("pause")
+        if option == 6:
+            print("Menu > Pedidos > Excluir pedido")
+            print("Digite o numero do pedido a ser excluído:\n", end=">")
+            n = input()
+            c.execute("SELECT value FROM operation WHERE oc_id = :n", {"n": n})
+            vet = c.fetchall()
+            i = 0
+            l = len(vet)
+            decrementar = 0
+            while i < l:
+                decrementar = decrementar + int(vet[i])
+                decrementar = decrementar * -1
+            
+            c.execute("DELETE FROM operation WHERE oc_id = :n", {"n": n})
+            c.execute("INSERT INTO operation (cashier_id, value, obs) VALUES (1, :value, :obs)", {"value": decrementar, "obs": "PED " + n + " CANCELADO"})
+            c.execute("DELETE FROM item WHERE oc_id = :n", {"n": n})
+            c.execute("DELETE FROM oc WHERE id = :n", {"n": n})
+            conn.commit()
+            print("Pedido ", n," excluído com sucesso! Valor adicionado ao calixa R$  ", decrementar)
+            os.system('pause')
         if option == 0:
             sair = 1
+        
 
 c = conn.cursor()
 
@@ -362,8 +463,6 @@ while sair == 0:
     elif option == 0:
         sair = 1
         conn.close()
-    else:
-        print("Opção inválida!\n\n\n\n")
 
 
         

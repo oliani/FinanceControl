@@ -26,6 +26,7 @@ CREATE TABLE operation (
     id integer NOT NULL CONSTRAINT operation_pk PRIMARY KEY,
     value double NOT NULL,
     obs varchar(255) NOT NULL,
+    oc_ID intiger,
     cashier_id integer NOT NULL,
     CONSTRAINT operation_cashier FOREIGN KEY (cashier_id)
     REFERENCES cashier (id)
@@ -56,6 +57,8 @@ CREATE TABLE stock (
     CONSTRAINT stock_product FOREIGN KEY (product_id)
     REFERENCES product (id)
 );''')
+
+c.execute("INSERT INTO cashier (total, name) VALUES(0, :nome)", {"nome": "CAIXA GERAL"})
 
 conn.commit()
 
